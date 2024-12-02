@@ -2,29 +2,26 @@ import osmnx as ox
 from path_algorithms import PathFinder
 import pandas as pd
 import matplotlib.pyplot as plt
+from traffic_simulation import simulate_traffic_conditions
+import folium
 
 # Get the street network
-place = "Statesboro, Georgia, USA"
+place = "Savannah, Georgia, USA"
 G = ox.graph_from_place(place, network_type="drive")
+G = simulate_traffic_conditions(G)
 
-# Create test cases with different origin-destination pairs
 
 
 # Savannah, Georgia test cases
 savannah_cases = [
-    ((32.0809, -81.0912), (32.0835, -81.0998)),  # Forsyth Park to River Street
-    ((32.0722, -81.0951), (32.0747, -81.1324)),  # Oglethorpe Mall to Hunter Army Airfield
-    ((32.0835, -81.0998), (32.0199, -81.1448)),  # River Street to Savannah Mall
+    ((32.03292259158145, -81.10128627312753), (32.09122999567041, -81.09923303303097)),  # Memorial Health University Medical Center to Talmadge Memorial Bridge
+    ((32.004189, -81.115379), (32.028182, -81.120673)),  # Oglethorpe Mall to Hunter Army Airfield
+    ((31.978861, -81.162827), (32.082062, -81.036018)) # Georgia Southern Armstrong to Old Fort Jackson
 ]
 
-# Statesboro, Georgia test cases
-statesboro_cases = [
-    ((32.4488, -81.7832), (32.4158, -81.7837)),  # Georgia Southern to The Plaza
-    ((32.4488, -81.7832), (32.4580, -81.7835)),  # Georgia Southern to Downtown
-    ((32.4158, -81.7837), (32.4279, -81.7592)),  # The Plaza to Mill Creek Park
-]
 
-test_cases = statesboro_cases
+
+test_cases = savannah_cases
 
 
 
@@ -41,6 +38,14 @@ for orig_coords, dest_coords in test_cases:
     dijkstra_path, dijkstra_time = path_finder.dijkstra_path(orig, dest)
     astar_path, astar_time = path_finder.astar_path(orig, dest)
     bellman_path, bellman_time = path_finder.bellman_ford_path(orig, dest)
+
+    #Calculating traffic weights for each path
+    dijkstra_traffic = sum(G[dijkstra_path[i]][dijkstra_path[i+1]][0]['traffic_weight'] 
+                          for i in range(len(dijkstra_path)-1))
+    astar_traffic = sum(G[astar_path[i]][astar_path[i+1]][0]['traffic_weight'] 
+                       for i in range(len(astar_path)-1))
+    bellman_traffic = sum(G[bellman_path[i]][bellman_path[i+1]][0]['traffic_weight'] 
+                         for i in range(len(bellman_path)-1))
     
     # Store results
     results.append({
@@ -50,7 +55,10 @@ for orig_coords, dest_coords in test_cases:
         'Bellman-Ford Time': bellman_time,
         'Dijkstra Length': len(dijkstra_path),
         'A* Length': len(astar_path),
-        'Bellman-Ford Length': len(bellman_path)
+        'Bellman-Ford Length': len(bellman_path),
+        'Dijkstra Traffic': dijkstra_traffic,
+        'A* Traffic': astar_traffic,
+        'Bellman-Ford Traffic': bellman_traffic
     })
 
 # Convert results to DataFrame
@@ -86,3 +94,39 @@ plt.grid(True, axis='y')
 plt.xticks(range(len(results_df)), results_df['Route'], rotation=45)
 plt.tight_layout()
 plt.show()
+
+
+# # No need to run this part of the code as maps are generated in .html files
+
+ 
+
+# D = ox.plot_route_folium(G, dijkstra_path, color='red', weight=4, opacity=0.8,)
+
+
+
+# # Add A* route in a different color
+# A = ox.plot_route_folium(G, astar_path, color='blue', weight=4, opacity=0.8, map=D)
+
+# # Add Bellman-Ford route in a different color
+# B = ox.plot_route_folium(G, bellman_path, color='green', weight=4, opacity=0.8, map=D)
+
+# # Add a legend to distinguish the routes
+# legend_html = '''
+# <div style="position: fixed; bottom: 50px; left: 50px; z-index: 1000; background-color: white; padding: 10px; border: 2px solid grey;">
+# <p><span style="color: red;">■</span> Dijkstra</p>
+# <p><span style="color: blue;">■</span> A*</p>
+# <p><span style="color: green;">■</span> Bellman-Ford</p>
+# </div>
+# '''
+
+
+# D.get_root().html.add_child(folium.Element(legend_html))
+# A.get_root().html.add_child(folium.Element(legend_html))
+# B.get_root().html.add_child(folium.Element(legend_html))
+
+# # Save the maps to HTML files
+# D.save('dijkstra_path_route3.html')
+# A.save('astar_path_route3.html')
+# B.save('bellman_path_route3.html')
+
+

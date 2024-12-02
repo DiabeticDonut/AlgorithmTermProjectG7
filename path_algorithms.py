@@ -4,6 +4,11 @@ import networkx as nx
 import time
 
 class PathFinder:
+    """
+    A class that implements various shortest path algorithms for graph traversal.
+    Uses NetworkX library for path computation on geographic networks.
+    """
+
     def __init__(self, graph):
         self.G = graph
         
